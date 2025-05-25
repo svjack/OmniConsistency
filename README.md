@@ -11,6 +11,11 @@ Consistency from Paired Stylization Data**
 > [Show Lab](https://sites.google.com/view/showlab), National University of Singapore
 > <br>
 
+<a href="https://huggingface.co/spaces/yiren98/OmniConsistency"><img src="https://img.shields.io/badge/🤗_HuggingFace-Space-ffbd45.svg" alt="HuggingFace"></a>
+<a href="https://huggingface.co/showlab/OmniConsistency"><img src="https://img.shields.io/badge/🤗_HuggingFace-Model-ffbd45.svg" alt="HuggingFace"></a>
+
+
+
 <img src='./figure/teaser.png' width='100%' />
 
 ## Installation
@@ -130,4 +135,7 @@ clear_cache(pipe.transformer)
 image.save("results/output.png")
 ```
 
+<!-- ## Citation
+```
 
+``` -->
