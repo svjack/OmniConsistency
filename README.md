@@ -80,6 +80,31 @@ for name in tqdm(lora_names, desc="Generating style variations"):
 
 print("All style generations completed!")
 
+from datasets import Dataset, Image
+import os
+
+# Scan directory and create dataset
+def create_style_dataset(directory="results/lora_styles"):
+    samples = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".png"):
+            img_path = os.path.join(directory, filename)
+            style_name = filename.replace(".png", "").replace("_", " ")
+            samples.append({"image": img_path, "style": style_name})
+    
+    # Convert to HuggingFace Dataset
+    ds = Dataset.from_dict({
+        "image": [x["image"] for x in samples],
+        "style": [x["style"] for x in samples]
+    })
+    
+    # Cast image column to Image type
+    ds = ds.cast_column("image", Image())
+    return ds
+
+# Usage
+style_dataset = create_style_dataset()
+print(style_dataset)
 ```
 
 > **OmniConsistency: Learning Style-Agnostic
