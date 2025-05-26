@@ -1,5 +1,87 @@
 # OmniConsistency
 
+#### Xiang Demo
+```python
+import time
+import torch
+import os
+from tqdm import tqdm
+from PIL import Image
+from src_inference.pipeline import FluxPipeline
+from src_inference.lora_helper import set_single_lora
+
+# 初始化基础模型
+base_path = "black-forest-labs/FLUX.1-dev"
+pipe = FluxPipeline.from_pretrained(base_path, torch_dtype=torch.bfloat16)
+
+# 设置OmniConsistency LoRA
+set_single_lora(pipe.transformer, 
+                "../OmniConsistency/OmniConsistency.safetensors", 
+                lora_weights=[1], cond_size=512)
+
+# 定义所有LoRA风格
+lora_names = [
+    "3D_Chibi", "American_Cartoon", "Chinese_Ink", "Clay_Toy", "Fabric",
+    "Ghibli", "Irasutoya", "Jojo", "LEGO", "Line", "Macaron", "Oil_Painting",
+    "Origami", "Paper_Cutting", "Picasso", "Pixel", "Poly", "Pop_Art",
+    "Rick_Morty", "Snoopy", "Van_Gogh", "Vector"
+]
+
+# 加载所有LoRA
+lora_dir = "../OmniConsistency/LoRAs"
+for name in lora_names:
+    weight_file = f"{name}_rank128_bf16.safetensors"
+    pipe.load_lora_weights(lora_dir, weight_name=weight_file, adapter_name=name)
+
+# 启用CPU offload节省显存
+pipe.enable_sequential_cpu_offload()
+
+# 输入设置
+image_path1 = "xiang_image.jpg"
+base_prompt = "A young man with black hair and glasses sits outdoors in a white T-shirt, surrounded by lush green foliage. The natural backdrop contrasts with his relaxed posture, creating a serene vibe."
+spatial_image = [Image.open(image_path1).convert("RGB")]
+subject_images = []
+width, height = 1024, 1024
+
+# 创建输出目录
+output_dir = "results/lora_styles"
+os.makedirs(output_dir, exist_ok=True)
+
+# 遍历所有LoRA风格生成图片
+for name in tqdm(lora_names, desc="Generating style variations"):
+    # 设置当前LoRA
+    pipe.set_adapters(name)
+    
+    # 构建风格化提示词
+    style_prompt = f"{name.replace('_', ' ')} style, " + base_prompt
+    
+    # 生成图片
+    start_time = time.time()
+    image = pipe(
+        style_prompt,
+        height=height,
+        width=width,
+        guidance_scale=3.5,
+        num_inference_steps=25,
+        max_sequence_length=512,
+        generator=torch.Generator("cpu").manual_seed(5),
+        spatial_images=spatial_image,
+        subject_images=subject_images,
+        cond_size=512,
+    ).images[0]
+    
+    # 保存结果
+    output_path = os.path.join(output_dir, f"{name}.png")
+    image.save(output_path)
+    
+    # 打印耗时
+    elapsed_time = time.time() - start_time
+    tqdm.write(f"Generated {name} in {elapsed_time:.2f}s")
+
+print("All style generations completed!")
+
+```
+
 > **OmniConsistency: Learning Style-Agnostic
 Consistency from Paired Stylization Data**
 > <br>
